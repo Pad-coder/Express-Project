@@ -1,7 +1,7 @@
 import express from 'express'
 import controller from './src/Controller/index.js'
 
-const port= 8000
+const port= process.env.PORT||8000
 const app = express()
 
 app.use(express.json())

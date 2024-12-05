@@ -1,12 +1,11 @@
 import { findIndexById } from "./../Common/Helper.js";
-const users = [
-  { id: 1, name: "John", age: 25, dob: "20-05-1999" },
-  { id: 2, name: "Jane", age: 30, dob: "20-05-1994" },
-  { id: 3, name: "Bob", age: 35, dob: "20-05-1989" },
-];
+import userModel from "../Model/userModel.js";
+import {ObjectId} from 'mongodb'
 
-const getAlluser = (req, res) => {
+
+const getAlluser = async (req, res) => {
   try {
+    let users = await userModel.findAll();
     res.status(200).send({
       message: "All users fetched successfully",
       data: users,
@@ -18,36 +17,38 @@ const getAlluser = (req, res) => {
   }
 };
 
-const getUserid = (req, res) => {
+const getUserid = async (req, res) => {
   try {
-    const { id } = req.params;
-    let index = findIndexById(users, Number(id));
-    if (index !== -1) {
+    const {id} = req.params;
+    let user = await userModel.findByFilter({_id:ObjectId.createFromHexString(id)})
+
+    // let index = findIndexById(users, Number(id));
+    if (user) {
       res.status(200).send({
         message: "Data fetch successful",
-        data: users[index],
-      });
+        data:user
+      })
     } else {
       res.status(400).send({
-        message: `User ID  ${req.params.id} not found`,
+        message: `User ID not found`,
       });
     }
   } catch (err) {
     res.status(500).send({
-      message: "Error fetching users",
+      message: err.message,
     });
   }
 };
 
-const createUser = (req, res) => {
+const createUser = async (req, res) => {
   try {
     let dob = new Date(req.body.dob);
     console.log(dob);
     let today = new Date();
-    req.body.id = users.length ? users[users.length - 1].id + 1 : 1;
+    // req.body.id = users.length ? users[users.length - 1].id + 1 : 1;
     req.body.age = Math.abs(today.getFullYear() - dob.getFullYear());
 
-    users.push(req.body);
+    await userModel.create(req.body)
 
     res.status(201).send({
       message: "User created successfully",
@@ -60,18 +61,19 @@ const createUser = (req, res) => {
   }
 };
 
-const editUserbyId = (req, res) => {
+const editUserbyId = async(req, res) => {
   try {
     let { id } = req.params;
-    let index = findIndexById(users, Number(id));
-    if (index !== -1) {
+
+     let user = await userModel.findByFilter({_id:ObjectId.createFromHexString(id)})
+    if (user) {
       let dob = new Date(req.body.dob);
 
       let today = new Date();
       req.body.id = Number(id);
       req.body.age = Math.abs(today.getFullYear() - dob.getFullYear());
 
-      users.splice(index, 1, req.body);
+      await userModel.editById({_id:ObjectId.createFromHexString(id)},req.body)
 
       res.status(200).send({
         message: "User updated successfully",
@@ -89,12 +91,13 @@ const editUserbyId = (req, res) => {
   }
 };
 
-const deleteUserById = (req, res) => {
+const deleteUserById = async(req, res) => {
   try {
     let { id } = req.params;
-    let index = findIndexById(users, Number(id));
-    if (index !== -1) {
-      users.splice(index, 1);
+    
+    let user = await userModel.findByFilter({_id:ObjectId.createFromHexString(id)})
+    if (user) {
+     await userModel.deleteById({_id:ObjectId.createFromHexString(id)})
       res.status(200).send({
         message: "User deleted successfully",
       });
@@ -110,6 +113,7 @@ const deleteUserById = (req, res) => {
     });
   }
 };
+
 export default {
   getAlluser,
   getUserid,
